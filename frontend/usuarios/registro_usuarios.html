@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Usuarios y respaldos · Triates Papelería POS</title>
+<link rel="stylesheet" href="../assets/estilos.css">
+</head>
+<body>
+<div id="app"><nav id="nav"></nav><main id="main">
+<h2>Usuarios y permisos</h2>
+<div class="card form"><h3 style="margin-top:0">Registrar usuario</h3>
+ <form id="frm">
+  <label for="nombre">Nombre</label><input id="nombre" required>
+  <label for="usuario">Usuario</label><input id="usuario" required autocomplete="off">
+  <label for="pass">Contraseña (mínimo 4 caracteres)</label><input id="pass" type="password" minlength="4" required autocomplete="new-password">
+  <label for="rol">Rol</label><select id="rol"><option>Encargado de mostrador</option><option>Propietario</option></select>
+  <p style="margin-top:14px"><button class="btn p" type="submit">Crear usuario</button></p>
+ </form></div>
+<h3 class="sec">Usuarios registrados</h3>
+<div class="card tw"><table><thead><tr><th>Nombre</th><th>Usuario</th><th>Rol</th><th>Accesos adicionales</th></tr></thead><tbody id="filas"></tbody></table></div>
+<h3 class="sec">Copias de seguridad</h3>
+<div class="fila" style="margin-bottom:12px"><button class="btn p" onclick="respaldar()">Crear copia ahora</button><span style="color:var(--mut)">Se guardan como archivos .sql en la carpeta <code>backups/</code> del proyecto.</span></div>
+<div class="card tw"><table><thead><tr><th>Fecha y hora</th><th>Archivo</th><th>Creada por</th></tr></thead><tbody id="resp"></tbody></table></div></main></div>
+<script src="../assets/app.js"></script>
+<script>
+const PERMISOS = ['Inventario', 'Compras', 'Reportes'];
+const cargar = seguro(async () => {
+  const [us, rs] = await Promise.all([api('/usuarios'), api('/usuarios/respaldos')]);
+  $('#filas').innerHTML = us.map(u => `<tr><td>${esc(u.nombre)}</td><td>${esc(u.usuario)}</td><td>${esc(u.rol)}</td><td>${u.rol === 'Propietario' ? '<span class="tag ok">Acceso total</span>'
+    : PERMISOS.map(p => `<label class="perm" style="margin:0"><input type="checkbox" value="${p}" data-u="${u.id}" ${u.permisos.includes(p) ? 'checked' : ''} onchange="permisos(${u.id})">${p}</label>`).join('')}</td></tr>`).join('');
+  $('#resp').innerHTML = rs.length ? rs.map(r => `<tr><td>${esc(r.fecha)}</td><td>${esc(r.archivo)}</td><td>${esc(r.usuario)}</td></tr>`).join('') : '<tr><td colspan="3" class="vacio">Aún no hay copias de seguridad.</td></tr>';
+});
+const permisos = seguro(async id => {
+  const p = [...document.querySelectorAll(`input[data-u="${id}"]:checked`)].map(x => x.value);
+  await api(`/usuarios/${id}/permisos`, { metodo: 'PUT', cuerpo: { permisos: p } });
+  aviso('Permisos actualizados');
+});
+const respaldar = seguro(async () => {
+  const d = await api('/usuarios/respaldos', { metodo: 'POST' });
+  aviso('Copia creada: ' + d.archivo); cargar();
+});
+$('#frm').addEventListener('submit', seguro(async e => {
+  e.preventDefault();
+  await api('/usuarios', { metodo: 'POST', cuerpo: { nombre: $('#nombre').value, usuario: $('#usuario').value, contrasena: $('#pass').value, rol: $('#rol').value } });
+  e.target.reset(); aviso('Usuario creado'); cargar();
+}));
+iniciar('owner').then(u => { if (u) cargar(); });
+</script>
+</body>
+</html>

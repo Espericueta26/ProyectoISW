@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Registrar venta · Triates Papelería POS</title>
+<link rel="stylesheet" href="../assets/estilos.css">
+</head>
+<body>
+<div id="app"><nav id="nav"></nav><main id="main">
+<h2>Registrar venta</h2>
+<div class="venta">
+ <section class="card">
+  <h3 style="margin-top:0">Agregar productos</h3>
+  <form id="frmAgregar" class="fila">
+   <div class="grow"><label for="buscar">Producto o servicio</label><input id="buscar" list="lista" placeholder="Escribe para buscar…" autocomplete="off" required></div>
+   <div style="width:110px"><label for="cantidad">Cantidad</label><input id="cantidad" type="number" min="1" value="1" required></div>
+   <button class="btn p" type="submit">Agregar</button>
+  </form>
+  <datalist id="lista"></datalist>
+  <h3>Productos de la venta</h3>
+  <div class="tw"><table><thead><tr><th>Producto</th><th>Precio</th><th>Cantidad</th><th>Subtotal</th><th></th></tr></thead><tbody id="filas"></tbody></table></div>
+ </section>
+ <aside class="card" id="resumen">
+  <h3 style="margin-top:0">Resumen de compra</h3>
+  <label for="cliente">Cliente</label>
+  <div class="fila"><select id="cliente" class="grow"></select><button class="btn s" type="button" onclick="dlg.showModal()">Nuevo</button></div>
+  <label for="pago">Método de pago</label>
+  <select id="pago" onchange="pintar()"><option>Efectivo</option><option>Tarjeta</option><option>Transferencia</option></select>
+  <div id="bloqueRecibido"><label for="recibido">Monto recibido</label><input id="recibido" type="number" min="0" step="0.01" oninput="pintar()"><p class="cambio" id="cambio">Cambio: $0.00</p></div>
+  <div class="tot"><span>Total</span><span id="total">$0.00</span></div>
+  <div class="fila"><button class="btn" onclick="registrar('Cotización')">Realizar cotización</button><button class="btn p grow" onclick="registrar('Nota de remisión')">Cobrar</button></div>
+ </aside>
+</div>
+<dialog id="dlg"><form id="frmCliente"><h3 style="margin-top:0">Nuevo cliente</h3>
+ <label for="cn">Nombre</label><input id="cn" required><label for="ct">Teléfono</label><input id="ct"><label for="cm">Correo</label><input id="cm" type="email">
+ <div class="fila" style="margin-top:14px"><button class="btn p" type="submit">Guardar cliente</button><button class="btn" type="button" onclick="dlg.close()">Cancelar</button></div></form></dialog></main></div>
+<script src="../assets/app.js"></script>
+<script>
+let productos = [], clientes = [], carrito = []; // carrito: { p: producto, cantidad }
+const dlg = $('#dlg');
+const limite = p => +p.es_servicio ? Infinity : +p.existencias;
+const total = () => carrito.reduce((a, l) => a + l.p.precio * l.cantidad, 0);
+
+function buscarProducto(txt) {
+  const t = txt.trim().toLowerCase();
+  const exacto = productos.find(x => x.nombre.toLowerCase() === t);
+  if (exacto) return exacto;
+  const parecidos = productos.filter(x => x.nombre.toLowerCase().includes(t));
+  return parecidos.length === 1 ? parecidos[0] : null;
+}
+function pintar() {
+  $('#filas').innerHTML = carrito.length ? carrito.map((l, i) => `<tr><td>${esc(l.p.nombre)}</td><td>${money(l.p.precio)}</td>
+    <td><input class="cant" type="number" min="1" value="${l.cantidad}" aria-label="Cantidad de ${esc(l.p.nombre)}" onchange="cambiar(${i}, this.value)"></td>
+    <td>${money(l.p.precio * l.cantidad)}</td><td><button class="btn s d" onclick="quitar(${i})">Quitar</button></td></tr>`).join('')
+    : '<tr><td colspan="5" class="vacio">Agrega productos para iniciar la venta.</td></tr>';
+  $('#total').textContent = money(total());
+  const efectivo = $('#pago').value === 'Efectivo';
+  $('#bloqueRecibido').style.display = efectivo ? '' : 'none';
+  $('#cambio').textContent = 'Cambio: ' + money(Math.max((+$('#recibido').value || 0) - total(), 0));
+}
+function cambiar(i, v) {
+  const l = carrito[i]; let n = Math.max(parseInt(v) || 1, 1);
+  if (n > limite(l.p)) { n = limite(l.p); aviso('Solo hay ' + n + ' en existencia de ' + l.p.nombre); }
+  l.cantidad = n; pintar();
+}
+function quitar(i) { carrito.splice(i, 1); pintar(); }
+function pintarClientes(sel) {
+  $('#cliente').innerHTML = clientes.map(c => `<option value="${c.id_cliente}">${esc(c.nombre)}</option>`).join('');
+  if (sel) $('#cliente').value = sel;
+}
+$('#frmAgregar').addEventListener('submit', e => {
+  e.preventDefault();
+  const p = buscarProducto($('#buscar').value), n = parseInt($('#cantidad').value) || 0;
+  if (!p) return aviso('Elige un producto de la lista');
+  if (n < 1) return aviso('La cantidad debe ser al menos 1');
+  const l = carrito.find(x => x.p.id_producto === p.id_producto), nuevo = (l ? l.cantidad : 0) + n;
+  if (nuevo > limite(p)) return aviso('Sin existencias suficientes de ' + p.nombre + ' (quedan ' + p.existencias + ')');
+  l ? l.cantidad = nuevo : carrito.push({ p, cantidad: n });
+  $('#buscar').value = ''; $('#cantidad').value = 1; $('#buscar').focus(); pintar();
+});
+$('#frmCliente').addEventListener('submit', seguro(async e => {
+  e.preventDefault();
+  const d = await api('/ventas/clientes', { metodo: 'POST', cuerpo: { nombre: $('#cn').value, telefono: $('#ct').value, correo: $('#cm').value } });
+  clientes = await api('/ventas/clientes');
+  pintarClientes(d.id); e.target.reset(); dlg.close(); aviso('Cliente guardado');
+}));
+const registrar = seguro(async tipo => {
+  if (!carrito.length) return aviso('Agrega productos primero');
+  const nota = tipo === 'Nota de remisión', pago = $('#pago').value;
+  if (nota && pago === 'Efectivo' && (+$('#recibido').value || 0) < total()) return aviso('El monto recibido es menor al total');
+  const d = await api('/ventas/documentos', { metodo: 'POST', cuerpo: {
+    tipo, id_cliente: +$('#cliente').value, metodo_pago: nota ? pago : null,
+    items: carrito.map(l => ({ id_producto: l.p.id_producto, cantidad: l.cantidad })) } });
+  location.href = 'ticket_venta.html?id=' + d.id_documento;
+});
+iniciar().then(seguro(async u => {
+  if (!u) return;
+  [productos, clientes] = await Promise.all([api('/inventario/productos'), api('/ventas/clientes')]);
+  $('#lista').innerHTML = productos.map(p => `<option value="${esc(p.nombre)}">${money(p.precio)} · ${+p.es_servicio ? 'Servicio' : p.existencias + ' en existencia'}</option>`).join('');
+  pintarClientes(); pintar();
+}));
+</script>
+</body>
+</html>

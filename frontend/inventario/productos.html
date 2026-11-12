@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Productos · Triates Papelería POS</title>
+<link rel="stylesheet" href="../assets/estilos.css">
+</head>
+<body>
+<div id="app"><nav id="nav"></nav><main id="main">
+<h2>Productos e inventario</h2>
+<div class="stats" id="stats"></div>
+<div class="fila" style="margin-bottom:12px"><div class="grow" style="max-width:320px"><input id="filtro" placeholder="Buscar por nombre o categoría" oninput="pintar()" aria-label="Buscar productos"></div><a class="btn p" href="registrar_producto.html" style="text-decoration:none">Registrar producto</a></div>
+<div class="card tw"><table><thead><tr><th>Producto</th><th>Categoría</th><th>Precio</th><th>Existencias</th><th></th></tr></thead><tbody id="filas"></tbody></table></div>
+<dialog id="dlg"><form id="frmResurtir"><h3 style="margin-top:0" id="dlgTitulo">Resurtir</h3>
+ <label for="rq">Cantidad que ingresa</label><input id="rq" type="number" min="1" value="10" required>
+ <label for="rk">Costo total de la compra</label><input id="rk" type="number" min="0.01" step="0.01" required>
+ <div class="fila" style="margin-top:14px"><button class="btn p" type="submit">Registrar resurtido</button><button class="btn" type="button" onclick="dlg.close()">Cancelar</button></div></form></dialog></main></div>
+<script src="../assets/app.js"></script>
+<script>
+let lista = [], idResurtir = 0;
+const dlg = $('#dlg');
+const bajo = p => !+p.es_servicio && +p.existencias <= +p.stock_minimo;
+const cargar = seguro(async () => { lista = await api('/inventario/productos'); pintar(); });
+function pintar() {
+  const q = $('#filtro').value.toLowerCase(), nb = lista.filter(bajo).length;
+  $('#stats').innerHTML = `<div class="card stat"><b>${lista.length}</b><span>Productos y servicios</span></div><div class="card stat"><b style="color:${nb ? 'var(--bad)' : 'var(--ok)'}">${nb}</b><span>Con existencias bajas</span></div>`;
+  const l = lista.filter(p => p.nombre.toLowerCase().includes(q) || p.categoria.toLowerCase().includes(q));
+  $('#filas').innerHTML = l.length ? l.map(p => `<tr><td>${esc(p.nombre)}</td><td>${esc(p.categoria)}</td><td>${money(p.precio)}</td>
+   <td>${+p.es_servicio ? '<span class="tag">Servicio</span>' : `<span class="tag ${bajo(p) ? 'low' : 'ok'}">${p.existencias}${bajo(p) ? ' · resurtir' : ''}</span>`}</td>
+   <td class="row">${+p.es_servicio ? '' : `<button class="btn s" onclick="abrirResurtir(${p.id_producto})">Resurtir</button>`}<a class="btn s" style="text-decoration:none" href="registrar_producto.html?id=${p.id_producto}">Editar</a><button class="btn s d" onclick="eliminar(${p.id_producto})">Eliminar</button></td></tr>`).join('')
+   : '<tr><td colspan="5" class="vacio">No se encontraron productos.</td></tr>';
+}
+function abrirResurtir(id) { idResurtir = id; $('#dlgTitulo').textContent = 'Resurtir: ' + lista.find(p => p.id_producto == id).nombre; $('#rk').value = ''; dlg.showModal(); }
+$('#frmResurtir').addEventListener('submit', seguro(async e => {
+  e.preventDefault();
+  await api(`/inventario/productos/${idResurtir}/resurtir`, { metodo: 'POST', cuerpo: { cantidad: $('#rq').value, costo: $('#rk').value } });
+  dlg.close(); aviso('Resurtido registrado'); cargar();
+}));
+const eliminar = seguro(async id => {
+  if (!confirm('¿Eliminar este producto? Las ventas anteriores se conservan.')) return;
+  await api(`/inventario/productos/${id}`, { metodo: 'DELETE' });
+  aviso('Producto eliminado'); cargar();
+});
+iniciar('Inventario').then(u => { if (u) cargar(); });
+</script>
+</body>
+</html>

@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Reporte de ventas · Triates Papelería POS</title>
+<link rel="stylesheet" href="../assets/estilos.css">
+</head>
+<body>
+<div id="app"><nav id="nav"></nav><main id="main">
+<h2>Reporte de ventas</h2>
+<form class="fila card" id="frmRango" style="margin-bottom:16px">
+ <div><label for="desde">Desde</label><input id="desde" type="date" required></div>
+ <div><label for="hasta">Hasta</label><input id="hasta" type="date" required></div>
+ <button class="btn p" type="submit">Consultar</button>
+</form>
+<div class="stats" id="stats"></div>
+<div class="fila" style="align-items:flex-start;gap:16px">
+ <div class="card tw grow"><h3 style="margin-top:0">Ventas por método de pago</h3><table><thead><tr><th>Método</th><th>Notas</th><th>Total</th></tr></thead><tbody id="metodos"></tbody></table></div>
+ <div class="card tw grow"><h3 style="margin-top:0">Productos más vendidos</h3><table><thead><tr><th>Producto</th><th>Piezas</th><th>Importe</th></tr></thead><tbody id="top"></tbody></table></div>
+</div>
+<h3 class="sec">Notas de remisión del periodo</h3>
+<div class="card tw"><table><thead><tr><th>Folio</th><th>Fecha</th><th>Cliente</th><th>Pago</th><th>Total</th><th></th></tr></thead><tbody id="notas"></tbody></table></div>
+<h3 class="sec">Corte de caja</h3>
+<div class="fila" style="margin-bottom:12px"><button class="btn p" onclick="guardarCorte()">Guardar corte del día de hoy</button><span style="color:var(--mut)">Guarda las ventas y egresos de hoy, sin importar el periodo consultado.</span></div>
+<div class="card tw"><table><thead><tr><th>Fecha</th><th>Usuario</th><th>Ventas</th><th>Egresos</th><th>Saldo</th></tr></thead><tbody id="cortes"></tbody></table></div>
+<section id="egresos" hidden>
+ <h3 class="sec">Compras y egresos</h3>
+ <form class="card fila" id="frmEgreso" style="margin-bottom:14px">
+  <div><label for="et">Tipo</label><select id="et"><option>Mercancía</option><option>Sueldos</option><option>Otros gastos</option></select></div>
+  <div class="grow"><label for="ec">Concepto</label><input id="ec" required></div>
+  <div style="width:140px"><label for="em">Monto</label><input id="em" type="number" min="0.01" step="0.01" required></div>
+  <button class="btn p" type="submit">Registrar egreso</button>
+ </form>
+ <div class="card tw"><table><thead><tr><th>Fecha</th><th>Tipo</th><th>Concepto</th><th>Registró</th><th>Monto</th></tr></thead><tbody id="listaEgresos"></tbody></table></div>
+</section></main></div>
+<script src="../assets/app.js"></script>
+<script>
+let usuario = null;
+const vacio = (n, t) => `<tr><td colspan="${n}" class="vacio">${t}</td></tr>`;
+const consultar = seguro(async () => {
+  // Sin fechas, el servidor responde con el día de hoy y el formulario se llena con esa fecha
+  const consulta = {};
+  if ($('#desde').value && $('#hasta').value) { consulta.desde = $('#desde').value; consulta.hasta = $('#hasta').value; }
+  const r = await api('/reportes/ventas', { consulta });
+  $('#desde').value = r.desde; $('#hasta').value = r.hasta;
+  $('#stats').innerHTML = `<div class="card stat"><b>${money(r.total_ventas)}</b><span>Ventas (${r.notas.length} notas)</span></div><div class="card stat"><b>${money(r.total_egresos)}</b><span>Egresos</span></div><div class="card stat"><b style="color:${r.saldo >= 0 ? 'var(--ok)' : 'var(--bad)'}">${money(r.saldo)}</b><span>Saldo del periodo</span></div>`;
+  $('#metodos').innerHTML = ['Efectivo', 'Tarjeta', 'Transferencia'].map(m => { const x = r.por_metodo.find(y => y.m === m) || { n: 0, t: 0 }; return `<tr><td>${m}</td><td>${x.n}</td><td>${money(x.t)}</td></tr>`; }).join('');
+  $('#top').innerHTML = r.top_productos.length ? r.top_productos.map(p => `<tr><td>${esc(p.nombre)}</td><td>${p.cantidad}</td><td>${money(p.importe)}</td></tr>`).join('') : vacio(3, 'Sin ventas en el periodo.');
+  $('#notas').innerHTML = r.notas.length ? r.notas.map(n => `<tr><td>#${String(n.folio).padStart(4, '0')}</td><td>${esc(n.fecha)}</td><td>${esc(n.cliente)}</td><td>${esc(n.metodo_pago)}</td><td>${money(n.total)}</td><td><a class="btn s" style="text-decoration:none" href="../ventas/ticket_venta.html?id=${n.id_documento}">Ver ticket</a></td></tr>`).join('') : vacio(6, 'No hay notas de remisión en el periodo.');
+});
+const cargarCortes = seguro(async () => {
+  const c = await api('/reportes/cortes');
+  $('#cortes').innerHTML = c.length ? c.map(x => `<tr><td>${esc(x.fecha)}</td><td>${esc(x.usuario)}</td><td>${money(x.total_ventas)}</td><td>${money(x.total_egresos)}</td><td>${money(x.saldo)}</td></tr>`).join('') : vacio(5, 'Aún no hay cortes guardados.');
+});
+const cargarEgresos = seguro(async () => {
+  const e = await api('/reportes/egresos');
+  $('#listaEgresos').innerHTML = e.length ? e.map(x => `<tr><td>${esc(x.fecha)}</td><td>${esc(x.tipo)}</td><td>${esc(x.concepto)}</td><td>${esc(x.usuario)}</td><td>${money(x.monto)}</td></tr>`).join('') : vacio(5, 'Aún no hay egresos registrados.');
+});
+const guardarCorte = seguro(async () => {
+  await api('/reportes/corte', { metodo: 'POST' });
+  aviso('Corte de caja guardado'); cargarCortes();
+});
+$('#frmRango').addEventListener('submit', e => { e.preventDefault(); consultar(); });
+$('#frmEgreso').addEventListener('submit', seguro(async e => {
+  e.preventDefault();
+  await api('/reportes/egresos', { metodo: 'POST', cuerpo: { tipo: $('#et').value, concepto: $('#ec').value, monto: $('#em').value } });
+  e.target.reset(); aviso('Egreso registrado'); cargarEgresos(); consultar();
+}));
+iniciar('Reportes').then(u => {
+  if (!u) return;
+  consultar(); cargarCortes();
+  if (u.rol === 'Propietario' || u.permisos.includes('Compras')) { $('#egresos').hidden = false; cargarEgresos(); }
+});
+</script>
+</body>
+</html>

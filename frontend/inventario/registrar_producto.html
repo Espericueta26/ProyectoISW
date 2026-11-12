@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Registrar producto · Triates Papelería POS</title>
+<link rel="stylesheet" href="../assets/estilos.css">
+</head>
+<body>
+<div id="app"><nav id="nav"></nav><main id="main">
+<h2 id="titulo">Registrar producto</h2>
+<form class="card form" id="frm">
+ <label for="nombre">Nombre</label><input id="nombre" required>
+ <label for="cat">Categoría</label><select id="cat"></select>
+ <label for="precio">Precio</label><input id="precio" type="number" min="0.01" step="0.01" required>
+ <label for="existencias">Existencias</label><input id="existencias" type="number" min="0" value="0">
+ <label for="minimo">Existencias mínimas (alerta de resurtido)</label><input id="minimo" type="number" min="0" value="5">
+ <label class="perm"><input type="checkbox" id="servicio" onchange="alternar()"> Es un servicio (sin existencias)</label>
+ <div class="fila" style="margin-top:16px"><button class="btn p" type="submit">Guardar producto</button><a class="btn" style="text-decoration:none" href="productos.html">Cancelar</a></div>
+</form></main></div>
+<script src="../assets/app.js"></script>
+<script>
+const idEditar = +(new URLSearchParams(location.search).get('id') || 0);
+function alternar() { $('#existencias').disabled = $('#minimo').disabled = $('#servicio').checked; }
+iniciar('Inventario').then(seguro(async u => {
+  if (!u) return;
+  const cats = await api('/inventario/categorias');
+  $('#cat').innerHTML = cats.map(c => `<option value="${c.id_categoria}">${esc(c.nombre)}</option>`).join('');
+  if (idEditar) {
+    const p = await api('/inventario/productos/' + idEditar);
+    $('#titulo').textContent = 'Editar producto';
+    $('#nombre').value = p.nombre; $('#cat').value = p.id_categoria; $('#precio').value = p.precio;
+    $('#existencias').value = p.existencias; $('#minimo').value = p.stock_minimo; $('#servicio').checked = !!+p.es_servicio; alternar();
+  }
+}));
+$('#frm').addEventListener('submit', seguro(async e => {
+  e.preventDefault();
+  await api(idEditar ? '/inventario/productos/' + idEditar : '/inventario/productos', { metodo: idEditar ? 'PUT' : 'POST', cuerpo: { nombre: $('#nombre').value, id_categoria: $('#cat').value,
+    precio: $('#precio').value, existencias: $('#existencias').value, stock_minimo: $('#minimo').value, es_servicio: $('#servicio').checked } });
+  location.href = 'productos.html';
+}));
+</script>
+</body>
+</html>

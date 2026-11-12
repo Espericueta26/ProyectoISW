@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Iniciar sesión · Triates Papelería POS</title>
+<link rel="stylesheet" href="../assets/estilos.css">
+</head>
+<body>
+
+<div id="login">
+ <form class="lc" id="frm">
+  <h1>Triates <mark>Papelería</mark></h1>
+  <p style="color:var(--mut);margin:6px 0 14px">Gestor de Venta (POS)</p>
+  <label for="u">Usuario</label><input id="u" autocomplete="username" required>
+  <label for="pw">Contraseña</label><input id="pw" type="password" autocomplete="current-password" required>
+  <p id="err" role="alert" style="color:var(--bad);min-height:20px;margin:8px 0 0"></p>
+  <button class="btn p" style="width:100%" type="submit">Iniciar sesión</button>
+  <label>Acceso rápido para la demostración</label>
+  <div class="chips"><button type="button" class="chip" onclick="rellenar('propietario')">Propietario</button><button type="button" class="chip" onclick="rellenar('mostrador')">Encargado de mostrador</button></div>
+ </form>
+</div>
+<script src="../assets/app.js"></script>
+<script>
+function rellenar(u) { $('#u').value = u; $('#pw').value = '1234'; }
+$('#frm').addEventListener('submit', async e => {
+  e.preventDefault();
+  try {
+    await api('/usuarios/login', { metodo: 'POST', cuerpo: { usuario: $('#u').value.trim(), contrasena: $('#pw').value } });
+    location.href = '../ventas/registrar_venta.html';
+  } catch (err) { $('#err').textContent = err.message + '. Revisa los datos e intenta de nuevo.'; }
+});
+</script>
+</body>
+</html>

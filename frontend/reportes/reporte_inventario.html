@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Reporte de inventario · Triates Papelería POS</title>
+<link rel="stylesheet" href="../assets/estilos.css">
+</head>
+<body>
+<div id="app"><nav id="nav"></nav><main id="main">
+<h2>Reporte de inventario</h2>
+<div class="stats" id="stats"></div>
+<div class="fila" style="align-items:flex-start;gap:16px">
+ <div class="card tw grow"><h3 style="margin-top:0">Valor por categoría</h3><table><thead><tr><th>Categoría</th><th>Productos</th><th>Valor</th></tr></thead><tbody id="cats"></tbody></table></div>
+</div>
+<h3 class="sec">Existencias (los que requieren resurtido aparecen primero)</h3>
+<div class="card tw"><table><thead><tr><th>Producto</th><th>Categoría</th><th>Precio</th><th>Existencias</th><th>Mínimo</th><th>Valor</th></tr></thead><tbody id="filas"></tbody></table></div></main></div>
+<script src="../assets/app.js"></script>
+<script>
+iniciar('Reportes').then(seguro(async u => {
+  if (!u) return;
+  const r = await api('/reportes/inventario');
+  $('#stats').innerHTML = `<div class="card stat"><b>${r.total_productos}</b><span>Productos y servicios</span></div><div class="card stat"><b style="color:${r.bajos ? 'var(--bad)' : 'var(--ok)'}">${r.bajos}</b><span>Por resurtir</span></div><div class="card stat"><b>${money(r.valor_inventario)}</b><span>Valor a precio de venta</span></div>`;
+  $('#cats').innerHTML = r.por_categoria.map(c => `<tr><td>${esc(c.categoria)}</td><td>${c.productos}</td><td>${money(c.valor)}</td></tr>`).join('');
+  $('#filas').innerHTML = r.productos.map(p => { const srv = +p.es_servicio, bajo = !srv && +p.existencias <= +p.stock_minimo;
+    return `<tr><td>${esc(p.nombre)}</td><td>${esc(p.categoria)}</td><td>${money(p.precio)}</td><td>${srv ? '<span class="tag">Servicio</span>' : `<span class="tag ${bajo ? 'low' : 'ok'}">${p.existencias}${bajo ? ' · resurtir' : ''}</span>`}</td><td>${srv ? '—' : p.stock_minimo}</td><td>${srv ? '—' : money(p.valor)}</td></tr>`; }).join('');
+}));
+</script>
+</body>
+</html>

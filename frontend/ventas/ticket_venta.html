@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Ticket de venta · Triates Papelería POS</title>
+<link rel="stylesheet" href="../assets/estilos.css">
+</head>
+<body>
+<div id="app"><nav id="nav"></nav><main id="main">
+<div id="contenido"></div></main></div>
+<script src="../assets/app.js"></script>
+<script>
+const id = +(new URLSearchParams(location.search).get('id') || 0);
+function ticketHtml(d) {
+  return `<div class="ticket doc"><b>TRIATES PAPELERÍA</b><br>Calle Rosal #176, Valle de las Flores Infonavit<br>Saltillo, Coahuila · C.P. 25290<hr>
+  <b>${esc(d.tipo.toUpperCase())} #${String(d.folio).padStart(4, '0')}</b><br>Fecha: ${esc(d.fecha)}<br>Cliente: ${esc(d.cliente)}<br>Atendió: ${esc(d.usuario)}<hr>
+  ${d.items.map(l => `${l.cantidad} × ${esc(l.nombre)} <span style="float:right">${money(l.subtotal)}</span><br>`).join('')}<hr>
+  <b>TOTAL <span style="float:right">${money(d.total)}</span></b><br>${d.tipo === 'Cotización' ? 'Vigencia: 7 días' : 'Pago: ' + esc(d.metodo_pago)}</div>`;
+}
+iniciar().then(seguro(async u => {
+  if (!u) return;
+  if (id) {
+    const d = await api('/ventas/documentos/' + id);
+    document.title = d.tipo + ' #' + d.folio + ' · Triates Papelería POS';
+    $('#contenido').innerHTML = `<h2 class="noprint">${esc(d.tipo)} registrada</h2>${ticketHtml(d)}
+      <div class="fila noprint" style="margin-top:16px"><button class="btn p" onclick="window.print()">Imprimir</button><a class="btn" style="text-decoration:none" href="registrar_venta.html">Nueva venta</a><a class="btn" style="text-decoration:none" href="ticket_venta.html">Ver historial</a></div>`;
+  } else {
+    const h = await api('/ventas/documentos');
+    $('#contenido').innerHTML = `<h2>Tickets y cotizaciones</h2><div class="card tw">${h.length ? `<table><thead><tr><th>Folio</th><th>Tipo</th><th>Fecha</th><th>Cliente</th><th>Total</th><th></th></tr></thead><tbody>${h.map(x => `<tr><td>#${String(x.folio).padStart(4, '0')}</td><td>${esc(x.tipo)}</td><td>${esc(x.fecha)}</td><td>${esc(x.cliente)}</td><td>${money(x.total)}</td><td><a class="btn s" style="text-decoration:none" href="ticket_venta.html?id=${x.id_documento}">Ver ticket</a></td></tr>`).join('')}</tbody></table>` : '<p class="vacio">Aún no hay documentos. Registra una venta o una cotización para generarlos.</p>'}</div>`;
+  }
+}));
+</script>
+</body>
+</html>
