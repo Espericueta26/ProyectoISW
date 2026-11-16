@@ -176,7 +176,7 @@ label {
 }
 
 nav {
-  background: var(--card);
+  background: #14213d;
   color: #fff;
   padding: 18px 12px;
   display: flex;
