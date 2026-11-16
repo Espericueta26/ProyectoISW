@@ -1,6 +1,5 @@
 # Uso de inteligencia artificial
 
-
 ## Herramienta utilizada
 
 Claude (Anthropic), mediante la aplicación web claude.ai.
