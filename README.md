@@ -92,7 +92,7 @@ Requisitos: **Python 3.10 o superior** y un servidor **MySQL o MariaDB** en ejec
 3. **Iniciar el servidor:**
 
    ```bash
-   uvicorn backend.main:app --reload
+   venv/bin/uvicorn backend.main:app --reload
    ```
 
 4. Abre http://localhost:8000/ para usar el sistema. La documentación interactiva de la API (Swagger) está en
