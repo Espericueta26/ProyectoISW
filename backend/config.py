@@ -9,6 +9,15 @@ from sqlalchemy import create_engine, event
 from sqlalchemy.orm import DeclarativeBase, sessionmaker
 
 RAIZ = Path(__file__).resolve().parent.parent
+def _cargar_env():
+    archivo = RAIZ / ".env"
+    if archivo.exists():
+        for linea in archivo.read_text(encoding="utf-8").splitlines():
+            linea = linea.strip()
+            if linea and not linea.startswith("#"):
+                clave, valor = linea.split("=", 1)
+                os.environ.setdefault(clave.strip(), valor.strip().strip('"').strip("'"))
+_cargar_env()
 ZONA = ZoneInfo(os.getenv("APP_TZ", "America/Monterrey"))
 SECRET_KEY = os.getenv("SECRET_KEY", "cambia-esta-clave-antes-de-produccion")
 
