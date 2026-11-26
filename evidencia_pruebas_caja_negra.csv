@@ -7,13 +7,13 @@ CN-05,Autenticación,Valor límite,Usuario vacío,400 (dato inválido),"400, Rev
 CN-06,Autenticación,Valor límite,Contraseña vacía,400 (dato inválido),"400, Revisa los datos capturados (contrasena)",APROBADO
 CN-07,Autenticación,Clase inválida,Consultar productos sin haber iniciado sesión,401,"401, Sesión no válida",APROBADO
 CN-08,Usuarios,Valor límite,Crear usuario con contraseña de 3 caracteres,400 (mínimo 4),"400, Revisa los datos capturados (contrasena)",APROBADO
-CN-09,Usuarios,Valor límite,Crear usuario con contraseña de 4 caracteres,200,"200, id 5",APROBADO
+CN-09,Usuarios,Valor límite,Crear usuario con contraseña de 4 caracteres,200,"200, id 7",APROBADO
 CN-10,Usuarios,Clase inválida,Crear usuario con nombre de usuario repetido,409,"409, Ese nombre de usuario ya existe",APROBADO
 CN-11,Usuarios,Clase inválida,Crear usuario con un rol que no existe,400,"400, El rol no existe",APROBADO
 CN-12,Usuarios,Clase válida,Iniciar sesión con el usuario recién creado,200,"200, rol Encargado de mostrador",APROBADO
 CN-13,Usuarios,Control de acceso,Usuario sin permisos consulta la lista de usuarios,403,"403, No tienes permiso para esta acción",APROBADO
 CN-14,Usuarios,Clase válida,El propietario otorga el permiso Reportes a un usuario,200 y el permiso aparece en su sesión,"200, permisos ['Reportes']",APROBADO
-CN-15,Inventario,Clase válida,"Registrar producto: nombre, categoría 2, precio 10.00, existencias 5",200 y el producto aparece en el listado,"id 15, existencias 5",APROBADO
+CN-15,Inventario,Clase válida,"Registrar producto: nombre, categoría 2, precio 10.00, existencias 5",200 y el producto aparece en el listado,"id 19, existencias 5",APROBADO
 CN-16,Inventario,Valor límite,Registrar producto con precio 0,400,"400, Revisa los datos capturados (precio)",APROBADO
 CN-17,Inventario,Clase inválida,Registrar producto con precio negativo (-5),400,"400, Revisa los datos capturados (precio)",APROBADO
 CN-18,Inventario,Clase inválida,"Registrar producto con precio no numérico (""abc"")",400,"400, Revisa los datos capturados (precio)",APROBADO
@@ -25,14 +25,14 @@ CN-23,Inventario,Clase válida,Editar el producto: precio 10 → 15,200 y el nue
 CN-24,Inventario,Valor límite,Resurtir con cantidad 0,400,"400, Revisa los datos capturados (cantidad)",APROBADO
 CN-25,Inventario,Clase válida,Resurtir 10 piezas con costo 50,200 y las existencias pasan de 5 a 15,"200, existencias 15",APROBADO
 CN-26,Inventario,Clase válida,Dar de baja el producto,200 y ya no aparece en el inventario,"baja 200, consulta posterior 404",APROBADO
-CN-27,Ventas,Clase válida,"Nota de remisión: 2 piezas de un producto de $12.50, pago en efectivo","200, total $25.00 y folio asignado","200, total 25.0, folio 5",APROBADO
+CN-27,Ventas,Clase válida,"Nota de remisión: 2 piezas de un producto de $12.50, pago en efectivo","200, total $25.00 y folio asignado","200, total 25.0, folio 10",APROBADO
 CN-28,Ventas,Clase válida,Revisar el inventario después de la nota anterior,Las existencias bajan de 10 a 8,existencias 8,APROBADO
 CN-29,Ventas,Valor límite,Venta con cantidad 0,"400, no se registra","400, Revisa los datos capturados (cantidad)",APROBADO
 CN-30,Ventas,Clase inválida,Venta con cantidad negativa (-3),"400, no se registra","400, Revisa los datos capturados (cantidad)",APROBADO
 CN-31,Ventas,Clase inválida,Venta con cantidad decimal (1.5),"400, no se registra","400, Revisa los datos capturados (cantidad)",APROBADO
 CN-32,Ventas,Valor límite,Venta sin ningún producto (lista vacía),"400, no se registra","400, Revisa los datos capturados (items)",APROBADO
 CN-33,Ventas,Clase inválida,Venta de un producto que no existe (id 999999),"400, no se registra","400, Uno de los productos ya no está disponible",APROBADO
-CN-34,Ventas,Valor límite,Producto con 3 existencias: vender 4 (una más que las existencias),400 por existencias insuficientes; el inventario no cambia,"400, Existencias insuficientes de Producto limite CN 667309 (quedan 3), existencias 3",APROBADO
+CN-34,Ventas,Valor límite,Producto con 3 existencias: vender 4 (una más que las existencias),400 por existencias insuficientes; el inventario no cambia,"400, Existencias insuficientes de Producto limite CN 669234 (quedan 3), existencias 3",APROBADO
 CN-35,Ventas,Valor límite,Producto con 3 existencias: vender exactamente 3,200 y las existencias quedan en 0,"200, existencias 0",APROBADO
 CN-36,Ventas,Clase inválida,Nota de remisión sin método de pago,400,"400, Selecciona un método de pago",APROBADO
 CN-37,Ventas,Clase inválida,"Nota con método de pago no permitido (""Cheque"")",400,"400, Revisa los datos capturados (metodo_pago)",APROBADO
@@ -43,11 +43,11 @@ CN-41,Ventas,Clase inválida,Consultar el ticket de una venta que no existe,"404
 CN-42,Ventas,Control de acceso,Usuario sin permisos intenta eliminar una venta,403 (o 405 si falta el archivo nuevo),"403, No tienes permiso para esta acción",APROBADO
 CN-43,Ventas,Clase válida,El propietario modifica la venta: 5 piezas en lugar de 2,"200, total $62.50 y existencias 10 − 5 = 5","200, total 62.5, existencias 5",APROBADO
 CN-44,Ventas,Clase válida,El propietario elimina la venta modificada,"200, la venta ya no existe y las existencias regresan a 10","200, consulta posterior 404, existencias 10",APROBADO
-CN-45,Reportes,Clase válida,Reporte de ventas de hoy (usuario con permiso Reportes),"200 con ventas, egresos y saldo","200, ventas 530.0, saldo 480.0",APROBADO
+CN-45,Reportes,Clase válida,Reporte de ventas de hoy (usuario con permiso Reportes),"200 con ventas, egresos y saldo","200, ventas 1078.0, saldo 928.0",APROBADO
 CN-46,Reportes,Valor límite,"Rango de fechas invertido (desde 2026-12-01, hasta 2026-01-01)",400,"400, La fecha inicial no puede ser mayor a la final",APROBADO
 CN-47,Reportes,Valor límite,Rango de un solo día (desde = hasta = hoy),200,200,APROBADO
 CN-48,Reportes,Control de acceso,Usuario sin permiso Reportes consulta el reporte de ventas,403,"403, No tienes permiso para esta acción",APROBADO
 CN-49,Reportes,Valor límite,Registrar egreso con monto 0,400,"400, Revisa los datos capturados (monto)",APROBADO
 CN-50,Reportes,Clase válida,"Registrar egreso de $50 (concepto ""Luz"")",200,200,APROBADO
 CN-51,Reportes,Control de acceso,Usuario con Reportes pero sin Compras intenta registrar un egreso,403,"403, No tienes permiso para esta acción",APROBADO
-CN-52,Reportes,Clase válida,Guardar el corte de caja del día,200 y aparece en el historial de cortes,"200, cortes guardados 1",APROBADO
+CN-52,Reportes,Clase válida,Guardar el corte de caja del día,200 y aparece en el historial de cortes,"200, cortes guardados 2",APROBADO
